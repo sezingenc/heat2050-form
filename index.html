@@ -9,134 +9,182 @@
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <style>
-  /* Infrared City design-system tokens (ir-team-skills design-system/color-tokens.md) */
+  /* Infrared City tokens (design-system color-tokens.md); layout from the approved form + confirmation mockups. */
   :root {
-    --background: #ECECEC; --foreground: #0A0F1A; --card: #FFFFFF;
-    --muted: #F1F5F9; --muted-foreground: #64748B; --border: #E2E8F0;
-    --primary: #2B7C85; --primary-foreground: #FBF9F9; --primary-green-dark: #093E3E;
-    --secondary-blue-bg: #EFF6F6; --destructive: #EF4444; --radius: 8px;
-    /* UTCI heat-stress bands (analysis-colors.md) */
-    --utci-none: #bef264; --utci-moderate: #facc15; --utci-strong: #f97316;
-    --utci-very-strong: #dc2626; --utci-extreme: #7f1d1d;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --background: #0A0F1A; --foreground: #F8FAFC; --card: #0F172A;
-      --muted: #1E293B; --muted-foreground: #94A3B8; --border: #1E293B;
-      --primary: #F8FAFC; --primary-foreground: #0A0F1A; --secondary-blue-bg: #1E293B;
-      --destructive: #F87171;
-    }
-    :root:not([data-theme="light"]) .logo { filter: brightness(0) invert(1); }
+    --bg: #F2F2F2; --card: #FFFFFF; --ink: #0A0F1A; --muted: #4B5563; --soft: #6B7280; --line: #E2E5E9;
+    --teal: #2B7C85; --teal-ink: #FFFFFF; --sky: #D6ECF6; --hot: #D92D45; --radius: 10px;
   }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--background); color: var(--foreground);
-         font: 16px/1.5 Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
-         -webkit-font-smoothing: antialiased; }
-  header { max-width: 560px; margin: 0 auto; padding: 20px 16px 0; }
-  .logo { height: 22px; width: auto; display: block; }
-  main { max-width: 560px; margin: 0 auto; padding: 16px 16px 40px; }
-  .card { background: var(--card); border: 1px solid var(--border); border-radius: calc(var(--radius) * 2);
-          padding: 24px 20px; box-shadow: 0 1px 2px rgba(10, 15, 26, .04); }
-  .eyebrow { font-size: .75rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
-             color: var(--muted-foreground); margin: 0 0 8px; }
-  h1 { font-size: 1.75rem; line-height: 1.15; font-weight: 700; letter-spacing: -.02em; margin: 0 0 12px; }
-  .heat-strip { display: flex; height: 6px; border-radius: 3px; overflow: hidden; margin: 0 0 6px; }
-  .heat-strip span { flex: 1; }
-  .heat-legend { display: flex; justify-content: space-between; font-size: .72rem;
-                 color: var(--muted-foreground); margin: 0 0 16px; }
-  p.lead { color: var(--muted-foreground); margin: 0 0 20px; }
-  .search { display: flex; gap: 8px; margin-bottom: 8px; }
-  .search input { flex: 1; min-width: 0; }   /* let the field shrink next to the button on phones */
-  input[type=search], input[type=email] { width: 100%; padding: 11px 12px; font: inherit;
-    border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); color: var(--foreground); }
-  input:focus-visible, button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-  button { font: inherit; font-weight: 500; border-radius: var(--radius); border: 1px solid var(--border);
-    padding: 11px 14px; background: var(--muted); color: var(--foreground); cursor: pointer; white-space: nowrap; }
-  button.primary { width: 100%; background: var(--primary); color: var(--primary-foreground); border: 0;
-    font-weight: 600; padding: 14px; margin-top: 12px; }
-  button.primary:not(:disabled):hover { filter: brightness(1.08); }
-  button:disabled { opacity: .5; cursor: default; }
-  #results { list-style: none; margin: 0 0 8px; padding: 0; border: 1px solid var(--border);
-    border-radius: var(--radius); overflow: hidden; display: none; background: var(--card); }
-  #results li { padding: 10px 12px; border-top: 1px solid var(--border); cursor: pointer; font-size: .95rem; }
+  body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--ink); position: relative; overflow-x: hidden;
+         font: 16px/1.5 Inter, system-ui, -apple-system, "Segoe UI", sans-serif; -webkit-font-smoothing: antialiased; }
+  .blob { position: absolute; z-index: 0; width: 260px; height: 260px; border-radius: 50%; background: var(--sky);
+          top: -120px; right: -90px; pointer-events: none; }
+  header, main, footer { position: relative; z-index: 1; }
+  a { color: var(--teal); }
+
+  header { display: flex; justify-content: space-between; align-items: center; padding: 18px 20px; max-width: 1200px; margin: 0 auto; }
+  .logo { height: 22px; display: block; }
+  .event-pill { display: none; background: var(--card); border-radius: 999px; padding: 6px 14px; font-size: 11px;
+                font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink); }
+  main { max-width: 520px; margin: 0 auto; padding: 0 16px 28px; }
+
+  .eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 6px 0 8px; }
+  h1 { font-size: 30px; line-height: 1.12; font-weight: 800; letter-spacing: -.02em; margin: 0 0 12px; }
+  h1 .hot { color: var(--hot); }
+  .lead { color: var(--muted); font-size: 15px; margin: 0 0 18px; }
+
+  .card { background: var(--card); border-radius: 18px; padding: 20px 16px; box-shadow: 0 1px 2px rgba(10, 15, 26, .04); }
+  .label { display: block; font-weight: 700; font-size: 14px; margin: 0 0 8px; }
+  .search { display: flex; gap: 8px; margin-bottom: 10px; }
+  input[type=search], input[type=email] { flex: 1; min-width: 0; width: 100%; padding: 12px 14px; font: inherit; font-size: 15px;
+    border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); color: var(--ink); }
+  input::placeholder { color: #9AA1AC; }
+  input:focus-visible, button:focus-visible, a:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+  .icon-btn { flex: none; width: 46px; height: 46px; display: grid; place-items: center; cursor: pointer;
+              border: 1.5px solid var(--teal); border-radius: var(--radius); background: var(--card); color: var(--teal); }
+  #results { list-style: none; margin: -4px 0 10px; padding: 0; border: 1px solid var(--line); border-radius: var(--radius);
+             overflow: hidden; display: none; background: var(--card); }
+  #results li { padding: 10px 12px; border-top: 1px solid var(--line); cursor: pointer; font-size: 14px; }
   #results li:first-child { border-top: 0; }
-  #results li:hover { background: var(--secondary-blue-bg); }
-  #map { height: 300px; border-radius: var(--radius); border: 1px solid var(--border); margin-bottom: 6px; }
-  .hint { color: var(--muted-foreground); font-size: .875rem; margin: 0 0 20px; }
-  label.check { display: flex; gap: 10px; align-items: flex-start; font-size: .875rem; margin: 12px 0;
-                color: var(--muted-foreground); }
-  label.check input { margin-top: 3px; width: 18px; height: 18px; flex: none; accent-color: var(--primary); }
-  .field-label { font-weight: 600; font-size: .875rem; display: block; margin-bottom: 6px; }
-  #msg { margin-top: 12px; min-height: 1.5em; font-size: .9rem; }
-  #msg.error { color: var(--destructive); }
-  .preview-note { font-size: .8rem; color: var(--muted-foreground); text-align: center; margin: 8px 0 0; }
-  .done { text-align: center; padding: 24px 0; }
-  .done h2 { margin: 0 0 8px; font-size: 1.4rem; }
-  .done p { color: var(--muted-foreground); margin: 0; }
-  footer { color: var(--muted-foreground); font-size: .75rem; margin-top: 20px; padding: 0 4px; }
-  a { color: inherit; }
+  #results li:hover { background: #EFF6F6; }
+  #map { height: 220px; border-radius: 12px; margin-bottom: 8px; z-index: 0; }
   .leaflet-container { font: inherit; }
+  .pin-icon { background: none; border: 0; }
+  .hint { color: var(--soft); font-size: 12.5px; margin: 0 0 18px; }
+  .field { margin-bottom: 16px; }
+  label.check { display: flex; gap: 12px; align-items: flex-start; font-size: 13px; line-height: 1.55; margin: 0 0 14px; color: var(--muted); }
+  label.check input { margin-top: 2px; width: 18px; height: 18px; flex: none; accent-color: var(--teal); }
+  .cf-turnstile { margin: 4px 0 8px; }
+  .primary { width: 100%; display: flex; justify-content: center; align-items: center; gap: 10px; border: 0; cursor: pointer;
+             font: inherit; font-weight: 700; font-size: 16px; padding: 16px; border-radius: 999px;
+             background: var(--teal); color: var(--teal-ink); margin-top: 8px; }
+  .primary:disabled { opacity: .55; cursor: default; }
+  .primary:not(:disabled):hover { filter: brightness(1.07); }
+  .preview-note { font-size: 12px; color: var(--soft); text-align: center; margin: 8px 0 0; }
+  #msg { margin-top: 10px; min-height: 1.4em; font-size: 14px; }
+  #msg.error { color: #B42318; }
+  footer.page { font-size: 11.5px; color: var(--muted); padding: 18px 0 0; }
+
+  /* Confirmation */
+  .done { max-width: 440px; margin: 28px auto 0; text-align: center; padding: 30px 22px 26px; }
+  .done .env { width: 52px; height: 52px; border-radius: 50%; background: var(--sky); color: var(--teal);
+               display: grid; place-items: center; margin: 0 auto 14px; }
+  .done h2 { font-size: 26px; font-weight: 800; letter-spacing: -.02em; margin: 0 0 6px; }
+  .done .sub { color: var(--muted); font-size: 14.5px; margin: 0 0 20px; }
+  .steps { display: flex; justify-content: space-between; margin: 0 4px 18px; position: relative; }
+  .step { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 11.5px; color: var(--soft); }
+  .step .dot { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid #C9CED5; background: var(--card);
+               display: grid; place-items: center; }
+  .step.done-step { color: var(--ink); font-weight: 600; }
+  .step.done-step .dot { background: var(--teal); border-color: var(--teal); color: #fff; }
+  .step.current { color: var(--ink); }
+  .step.current .dot { border-color: var(--teal); }
+  .step.current .dot::after { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--teal); }
+  .summary { background: #F3F4F6; border-radius: 10px; text-align: left; font-size: 12.5px; margin: 0 0 20px; }
+  .summary div { display: flex; justify-content: space-between; gap: 12px; padding: 10px 12px; }
+  .summary div + div { border-top: 1px solid var(--line); }
+  .summary span { color: var(--soft); }
+  .summary strong { font-weight: 600; text-align: right; overflow-wrap: anywhere; }
+  .actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 11px 16px; border-radius: 999px; font: inherit;
+         font-size: 13.5px; font-weight: 700; text-decoration: none; cursor: pointer; }
+  .btn.outline { background: var(--card); color: var(--teal); border: 1.5px solid var(--teal); }
+  .btn.solid { background: var(--teal); color: #fff; border: 1.5px solid var(--teal); }
+
+  @media (min-width: 760px) {
+    .blob { width: 360px; height: 360px; top: -170px; right: -110px; }
+    header { padding: 22px 28px; }
+    .event-pill { display: inline-block; }
+    main { max-width: 560px; }
+    h1 { font-size: 36px; }
+    #map { height: 260px; }
+    .done { margin-top: 48px; padding: 34px 28px 30px; }
+    footer.page { position: fixed; left: 0; right: 0; bottom: 0; padding: 12px 28px; border-top: 1px solid var(--line);
+                  background: var(--bg); }
+  }
 </style>
 </head>
 <body>
+<div class="blob" aria-hidden="true"></div>
 <header>
   <a href="https://infrared.city" target="_blank" rel="noopener" aria-label="Infrared City">
-    <img class="logo" src="assets/logo-teal.svg" alt="Infrared City">
+    <img class="logo" src="assets/logo-teal.svg" alt="infrared.city">
   </a>
+  <span class="event-pill">Smart City Expo World Congress · Barcelona 2026</span>
 </header>
+
 <main>
-  <div class="card">
   <section id="form-view">
     <p class="eyebrow">Smart City Expo World Congress · Barcelona 2026</p>
-    <h1>How hot will your street be in 2050?</h1>
-    <div class="heat-strip" aria-hidden="true">
-      <span style="background:var(--utci-none)"></span><span style="background:var(--utci-moderate)"></span>
-      <span style="background:var(--utci-strong)"></span><span style="background:var(--utci-very-strong)"></span>
-      <span style="background:var(--utci-extreme)"></span>
-    </div>
-    <div class="heat-legend" aria-hidden="true"><span>No heat stress</span><span>Extreme heat stress</span></div>
+    <h1>How hot will your street be in <span class="hot">2050</span>?</h1>
     <p class="lead">Drop a pin on your street. We'll email you how hot it feels there today, and on the same summer afternoon in 2050 under a high-emissions scenario.</p>
 
-    <div class="search">
-      <input id="q" type="search" placeholder="Search a street or address" autocomplete="off" aria-label="Search a street or address">
-      <button id="locate" type="button" title="Use my location">My location</button>
+    <div class="card">
+      <label class="label" for="q">Find your street</label>
+      <div class="search">
+        <input id="q" type="search" placeholder="Search a street or address" autocomplete="off">
+        <button id="locate" class="icon-btn" type="button" title="Use my location" aria-label="Use my location">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+        </button>
+      </div>
+      <ul id="results" role="listbox"></ul>
+      <div id="map" role="application" aria-label="Map: tap to place the pin on your street"></div>
+      <p class="hint" id="pin-hint">Tap the map to place the pin on your street.</p>
+
+      <form id="form" novalidate>
+        <div class="field">
+          <label class="label" for="email">Your email</label>
+          <input id="email" type="email" required autocomplete="email" placeholder="you@example.com">
+        </div>
+        <label class="check">
+          <input id="consent" type="checkbox" required>
+          <span id="consent-text">I agree that Infrared City GmbH stores my email address and the location I selected to calculate my result and send it to me by email, as described in the <a href="https://infrared.city/privacy" target="_blank" rel="noopener">privacy notice</a>.</span>
+        </label>
+        <label class="check">
+          <input id="marketing" type="checkbox">
+          <span id="marketing-text">Optional: I'd like to receive occasional news from Infrared City about urban climate analysis. I can unsubscribe at any time.</span>
+        </label>
+
+        <div class="cf-turnstile" data-sitekey="REPLACE_WITH_TURNSTILE_SITE_KEY" data-theme="light"></div>
+        <button class="primary" id="submit" type="submit" disabled>Send me my street in 2050
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+        <div id="msg" role="status" aria-live="polite"></div>
+      </form>
     </div>
-    <ul id="results" role="listbox"></ul>
-    <div id="map" role="application" aria-label="Map: tap to place the pin on your street"></div>
-    <p class="hint" id="pin-hint">Tap the map to place the pin on your street.</p>
-
-    <form id="form" novalidate>
-      <label class="field-label" for="email">Your email</label>
-      <input id="email" type="email" required autocomplete="email" placeholder="you@example.com">
-
-      <label class="check">
-        <input id="consent" type="checkbox" required>
-        <span id="consent-text">I agree that Infrared City GmbH stores my email address and the location I selected to calculate my result and send it to me by email, as described in the <a href="https://infrared.city/privacy" target="_blank" rel="noopener">privacy notice</a>.</span>
-      </label>
-      <label class="check">
-        <input id="marketing" type="checkbox">
-        <span id="marketing-text">Optional: I'd like to receive occasional news from Infrared City about urban climate analysis. I can unsubscribe at any time.</span>
-      </label>
-
-      <div class="cf-turnstile" data-sitekey="REPLACE_WITH_TURNSTILE_SITE_KEY" data-theme="auto"></div>
-      <button class="primary" id="submit" type="submit" disabled>Send me my street in 2050</button>
-      <div id="msg" role="status" aria-live="polite"></div>
-    </form>
   </section>
 
-  <section id="done-view" class="done" hidden>
-    <h2>On its way ✉️</h2>
-    <p>We're simulating your street now. Your result usually arrives within an hour.</p>
+  <section id="done-view" class="card done" hidden>
+    <div class="env" aria-hidden="true">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
+    </div>
+    <h2>On its way</h2>
+    <p class="sub">We're simulating your street now. Your result usually arrives within an hour.</p>
+    <div class="steps">
+      <div class="step done-step"><span class="dot"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span>Pin received</div>
+      <div class="step current"><span class="dot"></span>Simulating your street</div>
+      <div class="step"><span class="dot"></span>Result in your inbox</div>
+    </div>
+    <div class="summary">
+      <div><span>Your pin</span><strong id="sum-pin">Selected street</strong></div>
+      <div><span>Sending to</span><strong id="sum-email"></strong></div>
+    </div>
+    <div class="actions">
+      <button class="btn outline" id="again" type="button">Pin another street</button>
+      <a class="btn solid" href="https://platform.infrared.city/?utm_source=heat2050&amp;utm_medium=form&amp;utm_campaign=scwec2026">Explore infrared.city
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    </div>
   </section>
-  </div>
 
-  <footer>
-    Climate projections: Copernicus Interactive Climate Atlas (C3S), CMIP6, SSP5-8.5. Street simulation: Infrared City.
+  <footer class="page">
+    Climate projections: <a href="https://atlas.climate.copernicus.eu" target="_blank" rel="noopener">Copernicus Interactive Climate Atlas</a> (C3S), CMIP6, SSP5-8.5.
+    Street simulation: <a href="https://infrared.city" target="_blank" rel="noopener">Infrared City</a>.
     Map © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors.
   </footer>
 </main>
@@ -157,15 +205,32 @@
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19, attribution: '© OpenStreetMap'
   }).addTo(map);
+  const pinIcon = L.divIcon({
+    className: 'pin-icon', iconSize: [30, 40], iconAnchor: [15, 39],
+    html: '<svg width="30" height="40" viewBox="0 0 30 40" aria-hidden="true"><path d="M15 0C6.7 0 0 6.6 0 14.8 0 25.9 15 40 15 40s15-14.1 15-25.2C30 6.6 23.3 0 15 0z" fill="#2B7C85"/><circle cx="15" cy="14.5" r="5.5" fill="#fff"/></svg>',
+  });
 
-  let pin = null;
+  let pin = null, pinLabel = '';
   const submit = document.getElementById('submit');
   const msg = document.getElementById('msg');
 
-  function setPin(latlng, zoom) {
-    if (pin) pin.setLatLng(latlng); else pin = L.marker(latlng, { draggable: true }).addTo(map);
+  async function describe(latlng) {   // street name for the confirmation, via Photon reverse geocoding
+    try {
+      const r = await fetch(`https://photon.komoot.io/reverse?lat=${latlng.lat}&lon=${latlng.lng}&limit=1`);
+      const p = (await r.json()).features[0]?.properties || {};
+      pinLabel = [p.street || p.name, p.city || p.county].filter(Boolean).join(', ');
+    } catch { pinLabel = ''; }
+  }
+
+  function setPin(latlng, zoom, label) {
+    if (pin) pin.setLatLng(latlng);
+    else {
+      pin = L.marker(latlng, { draggable: true, icon: pinIcon }).addTo(map);
+      pin.on('dragend', () => describe(pin.getLatLng()));
+    }
     if (zoom) map.setView(latlng, Math.max(map.getZoom(), 17));
     document.getElementById('pin-hint').textContent = 'Pin placed. Drag it to fine-tune.';
+    if (label) pinLabel = label; else describe(latlng);
     updateButton();
   }
   map.on('click', (e) => setPin(e.latlng));
@@ -197,7 +262,7 @@
           li.textContent = [p.name, p.street, p.city, p.country].filter(Boolean).join(', ');
           li.addEventListener('click', () => {
             const [lon, lat] = f.geometry.coordinates;
-            setPin(L.latLng(lat, lon), true);
+            setPin(L.latLng(lat, lon), true, [p.street || p.name, p.city].filter(Boolean).join(', '));
             results.style.display = 'none';
             q.value = li.textContent;
           });
@@ -213,16 +278,28 @@
   email.addEventListener('input', updateButton);
   consent.addEventListener('change', updateButton);
 
+  function showDone() {
+    document.getElementById('sum-pin').textContent = pinLabel || 'Selected street';
+    document.getElementById('sum-email').textContent = email.value.trim();
+    document.getElementById('form-view').hidden = true;
+    document.getElementById('done-view').hidden = false;
+    window.scrollTo(0, 0);
+  }
+  document.getElementById('again').addEventListener('click', () => {
+    document.getElementById('done-view').hidden = true;
+    document.getElementById('form-view').hidden = false;
+    msg.textContent = '';
+    if (window.turnstile && !PREVIEW) turnstile.reset();
+    updateButton();
+    setTimeout(() => map.invalidateSize(), 50);
+  });
+
   document.getElementById('form').addEventListener('submit', async (e) => {
     e.preventDefault();
     submit.disabled = true;
     msg.className = ''; msg.textContent = 'Sending…';
     const { lat, lng } = pin.getLatLng();
-    if (PREVIEW) {   // never log the email address: the preview is public
-      document.getElementById('form-view').hidden = true;
-      document.getElementById('done-view').hidden = false;
-      return;
-    }
+    if (PREVIEW) { msg.textContent = ''; showDone(); return; }   // never log the email: the preview is public
     try {
       const r = await fetch('/api/submit', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -234,8 +311,8 @@
       });
       const body = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(body.error || 'Something went wrong. Please try again.');
-      document.getElementById('form-view').hidden = true;
-      document.getElementById('done-view').hidden = false;
+      msg.textContent = '';
+      showDone();
     } catch (err) {
       msg.className = 'error'; msg.textContent = err.message;
       if (window.turnstile) turnstile.reset();
