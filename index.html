@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your Street in 2050 | Infrared City</title>
+<meta name="description" content="Drop a pin on your street and get it today versus 2050 by email.">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+<style>
+  /* Infrared City design-system tokens (ir-team-skills design-system/color-tokens.md) */
+  :root {
+    --background: #ECECEC; --foreground: #0A0F1A; --card: #FFFFFF;
+    --muted: #F1F5F9; --muted-foreground: #64748B; --border: #E2E8F0;
+    --primary: #2B7C85; --primary-foreground: #FBF9F9; --primary-green-dark: #093E3E;
+    --secondary-blue-bg: #EFF6F6; --destructive: #EF4444; --radius: 8px;
+    /* UTCI heat-stress bands (analysis-colors.md) */
+    --utci-none: #bef264; --utci-moderate: #facc15; --utci-strong: #f97316;
+    --utci-very-strong: #dc2626; --utci-extreme: #7f1d1d;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --background: #0A0F1A; --foreground: #F8FAFC; --card: #0F172A;
+      --muted: #1E293B; --muted-foreground: #94A3B8; --border: #1E293B;
+      --primary: #F8FAFC; --primary-foreground: #0A0F1A; --secondary-blue-bg: #1E293B;
+      --destructive: #F87171;
+    }
+    :root:not([data-theme="light"]) .logo { filter: brightness(0) invert(1); }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--background); color: var(--foreground);
+         font: 16px/1.5 Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+         -webkit-font-smoothing: antialiased; }
+  header { max-width: 560px; margin: 0 auto; padding: 20px 16px 0; }
+  .logo { height: 22px; width: auto; display: block; }
+  main { max-width: 560px; margin: 0 auto; padding: 16px 16px 40px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: calc(var(--radius) * 2);
+          padding: 24px 20px; box-shadow: 0 1px 2px rgba(10, 15, 26, .04); }
+  .eyebrow { font-size: .75rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+             color: var(--muted-foreground); margin: 0 0 8px; }
+  h1 { font-size: 1.75rem; line-height: 1.15; font-weight: 700; letter-spacing: -.02em; margin: 0 0 12px; }
+  .heat-strip { display: flex; height: 6px; border-radius: 3px; overflow: hidden; margin: 0 0 6px; }
+  .heat-strip span { flex: 1; }
+  .heat-legend { display: flex; justify-content: space-between; font-size: .72rem;
+                 color: var(--muted-foreground); margin: 0 0 16px; }
+  p.lead { color: var(--muted-foreground); margin: 0 0 20px; }
+  .search { display: flex; gap: 8px; margin-bottom: 8px; }
+  .search input { flex: 1; min-width: 0; }   /* let the field shrink next to the button on phones */
+  input[type=search], input[type=email] { width: 100%; padding: 11px 12px; font: inherit;
+    border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); color: var(--foreground); }
+  input:focus-visible, button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  button { font: inherit; font-weight: 500; border-radius: var(--radius); border: 1px solid var(--border);
+    padding: 11px 14px; background: var(--muted); color: var(--foreground); cursor: pointer; white-space: nowrap; }
+  button.primary { width: 100%; background: var(--primary); color: var(--primary-foreground); border: 0;
+    font-weight: 600; padding: 14px; margin-top: 12px; }
+  button.primary:not(:disabled):hover { filter: brightness(1.08); }
+  button:disabled { opacity: .5; cursor: default; }
+  #results { list-style: none; margin: 0 0 8px; padding: 0; border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden; display: none; background: var(--card); }
+  #results li { padding: 10px 12px; border-top: 1px solid var(--border); cursor: pointer; font-size: .95rem; }
+  #results li:first-child { border-top: 0; }
+  #results li:hover { background: var(--secondary-blue-bg); }
+  #map { height: 300px; border-radius: var(--radius); border: 1px solid var(--border); margin-bottom: 6px; }
+  .hint { color: var(--muted-foreground); font-size: .875rem; margin: 0 0 20px; }
+  label.check { display: flex; gap: 10px; align-items: flex-start; font-size: .875rem; margin: 12px 0;
+                color: var(--muted-foreground); }
+  label.check input { margin-top: 3px; width: 18px; height: 18px; flex: none; accent-color: var(--primary); }
+  .field-label { font-weight: 600; font-size: .875rem; display: block; margin-bottom: 6px; }
+  #msg { margin-top: 12px; min-height: 1.5em; font-size: .9rem; }
+  #msg.error { color: var(--destructive); }
+  .preview-note { font-size: .8rem; color: var(--muted-foreground); text-align: center; margin: 8px 0 0; }
+  .done { text-align: center; padding: 24px 0; }
+  .done h2 { margin: 0 0 8px; font-size: 1.4rem; }
+  .done p { color: var(--muted-foreground); margin: 0; }
+  footer { color: var(--muted-foreground); font-size: .75rem; margin-top: 20px; padding: 0 4px; }
+  a { color: inherit; }
+  .leaflet-container { font: inherit; }
+</style>
+</head>
+<body>
+<header>
+  <a href="https://infrared.city" target="_blank" rel="noopener" aria-label="Infrared City">
+    <img class="logo" src="assets/logo-teal.svg" alt="Infrared City">
+  </a>
+</header>
+<main>
+  <div class="card">
+  <section id="form-view">
+    <p class="eyebrow">Smart City Expo World Congress · Barcelona 2026</p>
+    <h1>How hot will your street be in 2050?</h1>
+    <div class="heat-strip" aria-hidden="true">
+      <span style="background:var(--utci-none)"></span><span style="background:var(--utci-moderate)"></span>
+      <span style="background:var(--utci-strong)"></span><span style="background:var(--utci-very-strong)"></span>
+      <span style="background:var(--utci-extreme)"></span>
+    </div>
+    <div class="heat-legend" aria-hidden="true"><span>No heat stress</span><span>Extreme heat stress</span></div>
+    <p class="lead">Drop a pin on your street. We'll email you how hot it feels there today, and on the same summer afternoon in 2050 under a high-emissions scenario.</p>
+
+    <div class="search">
+      <input id="q" type="search" placeholder="Search a street or address" autocomplete="off" aria-label="Search a street or address">
+      <button id="locate" type="button" title="Use my location">My location</button>
+    </div>
+    <ul id="results" role="listbox"></ul>
+    <div id="map" role="application" aria-label="Map: tap to place the pin on your street"></div>
+    <p class="hint" id="pin-hint">Tap the map to place the pin on your street.</p>
+
+    <form id="form" novalidate>
+      <label class="field-label" for="email">Your email</label>
+      <input id="email" type="email" required autocomplete="email" placeholder="you@example.com">
+
+      <label class="check">
+        <input id="consent" type="checkbox" required>
+        <span id="consent-text">I agree that Infrared City GmbH stores my email address and the location I selected to calculate my result and send it to me by email, as described in the <a href="https://infrared.city/privacy" target="_blank" rel="noopener">privacy notice</a>.</span>
+      </label>
+      <label class="check">
+        <input id="marketing" type="checkbox">
+        <span id="marketing-text">Optional: I'd like to receive occasional news from Infrared City about urban climate analysis. I can unsubscribe at any time.</span>
+      </label>
+
+      <div class="cf-turnstile" data-sitekey="REPLACE_WITH_TURNSTILE_SITE_KEY" data-theme="auto"></div>
+      <button class="primary" id="submit" type="submit" disabled>Send me my street in 2050</button>
+      <div id="msg" role="status" aria-live="polite"></div>
+    </form>
+  </section>
+
+  <section id="done-view" class="done" hidden>
+    <h2>On its way ✉️</h2>
+    <p>We're simulating your street now. Your result usually arrives within an hour.</p>
+  </section>
+  </div>
+
+  <footer>
+    Climate projections: Copernicus Interactive Climate Atlas (C3S), CMIP6, SSP5-8.5. Street simulation: Infrared City.
+    Map © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors.
+  </footer>
+</main>
+
+<script>
+  // Preview (local, or the GitHub Pages preview for colleagues; no backend): hide Turnstile, say so,
+  // and show the confirmation instead of submitting.
+  const PREVIEW = ['localhost', '127.0.0.1'].includes(location.hostname) || location.hostname.endsWith('github.io');
+  if (PREVIEW) {
+    document.querySelector('.cf-turnstile').remove();
+    const note = document.createElement('p');
+    note.className = 'preview-note';
+    note.textContent = 'Preview: nothing is sent and no email will arrive.';
+    document.getElementById('submit').after(note);
+  }
+
+  const map = L.map('map', { zoomControl: true }).setView([41.3874, 2.1686], 13);   // Barcelona
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19, attribution: '© OpenStreetMap'
+  }).addTo(map);
+
+  let pin = null;
+  const submit = document.getElementById('submit');
+  const msg = document.getElementById('msg');
+
+  function setPin(latlng, zoom) {
+    if (pin) pin.setLatLng(latlng); else pin = L.marker(latlng, { draggable: true }).addTo(map);
+    if (zoom) map.setView(latlng, Math.max(map.getZoom(), 17));
+    document.getElementById('pin-hint').textContent = 'Pin placed. Drag it to fine-tune.';
+    updateButton();
+  }
+  map.on('click', (e) => setPin(e.latlng));
+
+  document.getElementById('locate').addEventListener('click', () => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (p) => setPin(L.latLng(p.coords.latitude, p.coords.longitude), true),
+      () => { msg.className = 'error'; msg.textContent = 'Could not get your location. Search or tap the map instead.'; },
+      { enableHighAccuracy: true, timeout: 8000 });
+  });
+
+  // Address search (Photon / OpenStreetMap), debounced.
+  const q = document.getElementById('q'), results = document.getElementById('results');
+  let timer;
+  q.addEventListener('input', () => {
+    clearTimeout(timer);
+    const text = q.value.trim();
+    if (text.length < 3) { results.style.display = 'none'; return; }
+    timer = setTimeout(async () => {
+      try {
+        const c = map.getCenter();
+        const r = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(text)}&limit=5&lat=${c.lat}&lon=${c.lng}`);
+        const data = await r.json();
+        results.innerHTML = '';
+        for (const f of data.features) {
+          const p = f.properties;
+          const li = document.createElement('li');
+          li.textContent = [p.name, p.street, p.city, p.country].filter(Boolean).join(', ');
+          li.addEventListener('click', () => {
+            const [lon, lat] = f.geometry.coordinates;
+            setPin(L.latLng(lat, lon), true);
+            results.style.display = 'none';
+            q.value = li.textContent;
+          });
+          results.appendChild(li);
+        }
+        results.style.display = data.features.length ? 'block' : 'none';
+      } catch { results.style.display = 'none'; }
+    }, 300);
+  });
+
+  const email = document.getElementById('email'), consent = document.getElementById('consent');
+  function updateButton() { submit.disabled = !(pin && email.value.includes('@') && consent.checked); }
+  email.addEventListener('input', updateButton);
+  consent.addEventListener('change', updateButton);
+
+  document.getElementById('form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    submit.disabled = true;
+    msg.className = ''; msg.textContent = 'Sending…';
+    const { lat, lng } = pin.getLatLng();
+    if (PREVIEW) {   // never log the email address: the preview is public
+      document.getElementById('form-view').hidden = true;
+      document.getElementById('done-view').hidden = false;
+      return;
+    }
+    try {
+      const r = await fetch('/api/submit', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email.value, lat, lon: lng, consent: consent.checked,
+          marketing: document.getElementById('marketing').checked,
+          turnstile: (window.turnstile && turnstile.getResponse()) || '',
+        }),
+      });
+      const body = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(body.error || 'Something went wrong. Please try again.');
+      document.getElementById('form-view').hidden = true;
+      document.getElementById('done-view').hidden = false;
+    } catch (err) {
+      msg.className = 'error'; msg.textContent = err.message;
+      if (window.turnstile) turnstile.reset();
+      updateButton();
+    }
+  });
+</script>
+</body>
+</html>
